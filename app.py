@@ -8,7 +8,7 @@ from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.output_parsers import StrOutputParser
-
+from langchain_core.output_parsers import JsonOutputParser
 
 # ----------------------------------
 # 1. Load environment variables
@@ -66,8 +66,21 @@ prompt_template = ChatPromptTemplate.from_messages([
 
         Answer questions clearly and accurately.
         Use simple English.
-        Give examples whenever useful.
-        Keep answers easy to understand.short answer only
+        Keep answers short.
+
+        Return your response in the following JSON format:
+
+        {
+            "answer": "Your answer here",
+            "sources": []
+        }
+
+        Rules:
+        1. Always return valid JSON.
+        2. Put the answer inside the answer field.
+        3. Add source URLs only if you actually used or can verify them.
+        4. If no sources are available, return an empty array.
+        5. Do not include Markdown code fences.
         """
     ),
     MessagesPlaceholder(variable_name="chat_history"),
@@ -79,7 +92,7 @@ prompt_template = ChatPromptTemplate.from_messages([
 # 6. Create LangChain chain
 # ----------------------------------
 
-chain = prompt_template | llm | StrOutputParser()
+chain = prompt_template | llm | JsonOutputParser()
 
 
 # ----------------------------------
@@ -157,17 +170,24 @@ if user_question:
 
         try:
 
-            response = st.write_stream(
-                chain.stream({
-                    "chat_history": chat_history,
-                    "question": user_question
-                })
-            )
+            response = chain.invoke({
+                "chat_history": chat_history,
+                "question": user_question
+            })
+
+            # Display answer
+            st.markdown(response["answer"])
+
+            # Display sources
+            if response.get("sources"):
+                with st.expander("Sources"):
+                    for source in response["sources"]:
+                        st.markdown(f"- {source}")
 
             # Save AI response
             st.session_state.messages.append({
                 "role": "assistant",
-                "content": response
+                "content": response["answer"]
             })
 
         except Exception as error:
