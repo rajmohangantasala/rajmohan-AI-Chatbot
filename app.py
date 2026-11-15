@@ -54,10 +54,6 @@ llm = ChatGroq(
 )
 
 
-# ----------------------------------
-# 5. Create prompt template
-# ----------------------------------
-
 prompt_template = ChatPromptTemplate.from_messages([
     (
         "system",
@@ -70,10 +66,10 @@ prompt_template = ChatPromptTemplate.from_messages([
 
         Return your response in the following JSON format:
 
-        {
+        {{
             "answer": "Your answer here",
             "sources": []
-        }
+        }}
 
         Rules:
         1. Always return valid JSON.
